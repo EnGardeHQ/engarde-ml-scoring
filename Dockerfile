@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN useradd -m -u 1000 walletuser && chown -R walletuser:walletuser /app
-USER walletuser
+RUN useradd -m -u 1000 svcuser && chown -R svcuser:svcuser /app
+USER svcuser
 
-CMD ["/bin/sh", "-c", "if [ -z \"$PORT\" ] && [ \"$ENV\" = \"production\" ]; then echo 'FATAL: PORT not injected by Railway' >&2; exit 1; fi; alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["/bin/sh", "-c", "if [ -z \"$PORT\" ] && [ \"$ENV\" = \"production\" ]; then echo 'FATAL: PORT not injected by Railway' >&2; exit 1; fi; uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
