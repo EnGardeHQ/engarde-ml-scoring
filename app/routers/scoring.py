@@ -10,7 +10,6 @@ import logging
 
 from app.core.auth import verify_service_token, require_tenant
 from app.ml.synthetic_inference import SyntheticInferenceEngine
-from app.ml.synthetic_trainer import SyntheticModelTrainer
 from app.core.database import get_db
 
 logger = logging.getLogger(__name__)
@@ -71,8 +70,9 @@ async def train_models(
 ):
     """Trigger model training on behavioral profile data."""
     try:
-        trainer = SyntheticModelTrainer(db)
-        results = trainer.train_all()
+        from app.ml.synthetic_trainer import SyntheticEnrichmentTrainer
+        trainer = SyntheticEnrichmentTrainer(db=db)
+        results = await trainer.train_all()
         return TrainResponse(
             success=True,
             message="Training complete",
