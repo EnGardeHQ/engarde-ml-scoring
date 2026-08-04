@@ -7,3 +7,11 @@ python-json-logger==3.2.1
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
 redis==5.2.1
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.5.0
+scipy==1.11.4
+xgboost==2.1.0
+statsmodels==0.14.2
+joblib==1.4.2
+networkx==3.2.1

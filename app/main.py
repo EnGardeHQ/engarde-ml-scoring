@@ -6,7 +6,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.auth import verify_service_token
 from app.core.config import settings
 from app.core.logging import configure_logging
-from app.routers import health
+from app.routers import health, scoring, segmentation, behavioral
 
 configure_logging()
 settings.validate_production()
@@ -20,6 +20,9 @@ app = FastAPI(
 )
 
 app.include_router(health.router)
+app.include_router(scoring.router)
+app.include_router(segmentation.router)
+app.include_router(behavioral.router)
 
 @app.get("/")
 def root(_: str = Depends(verify_service_token)):
