@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import logging
 
-from app.core.auth import verify_service_token, require_tenant
+from app.core.auth import verify_service_token, require_tenant, enforce_tenant_match
 from app.ml.synthetic_inference import SyntheticInferenceEngine
 from app.core.database import get_db
 
@@ -20,7 +20,9 @@ inference_engine = SyntheticInferenceEngine()
 
 
 class PredictRequest(BaseModel):
-    tenant_id: str
+    # [Story 16.4] Retained for caller compatibility but no longer trusted:
+    # the X-EnGarde-Tenant-Id header is authoritative (403 on mismatch).
+    tenant_id: Optional[str] = None
     profile: Dict[str, Any]
     model_version: Optional[int] = None
 
@@ -32,7 +34,9 @@ class PredictResponse(BaseModel):
 
 
 class TrainRequest(BaseModel):
-    tenant_id: str
+    # [Story 16.4] Retained for caller compatibility but no longer trusted:
+    # the X-EnGarde-Tenant-Id header is authoritative (403 on mismatch).
+    tenant_id: Optional[str] = None
     model_types: Optional[List[str]] = None  # ["income", "purchase_propensity"]
 
 
@@ -46,8 +50,11 @@ class TrainResponse(BaseModel):
 async def predict(
     request: PredictRequest,
     _token: str = Depends(verify_service_token),
+    tenant_id: str = Depends(require_tenant),
 ):
     """Run inference on a behavioral profile."""
+    # [Story 16.4] Header-derived tenant wins over body-supplied tenant_id.
+    tenant_id = enforce_tenant_match(tenant_id, request.tenant_id)
     try:
         result = inference_engine.predict(
             profile=request.profile,
@@ -66,9 +73,12 @@ async def predict(
 async def train_models(
     request: TrainRequest,
     _token: str = Depends(verify_service_token),
+    tenant_id: str = Depends(require_tenant),
     db=Depends(get_db),
 ):
     """Trigger model training on behavioral profile data."""
+    # [Story 16.4] Header-derived tenant wins over body-supplied tenant_id.
+    tenant_id = enforce_tenant_match(tenant_id, request.tenant_id)
     try:
         from app.ml.synthetic_trainer import SyntheticEnrichmentTrainer
         trainer = SyntheticEnrichmentTrainer(db=db)

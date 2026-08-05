@@ -34,3 +34,14 @@ async def require_tenant(x_engarde_tenant_id: str = Header(default="")) -> str:
     if not x_engarde_tenant_id:
         raise HTTPException(status_code=400, detail="Missing X-EnGarde-Tenant-Id")
     return x_engarde_tenant_id
+
+
+def enforce_tenant_match(header_tenant_id: str, claimed_tenant_id=None) -> str:
+    """[Story 16.4] The header-derived tenant (X-EnGarde-Tenant-Id, set by the
+    trusted proxy) is authoritative. Body/query-supplied tenant_id values are
+    still accepted for caller compatibility but are never trusted: a claimed
+    value that differs from the header is rejected.
+    """
+    if claimed_tenant_id and claimed_tenant_id != header_tenant_id:
+        raise HTTPException(status_code=403, detail="tenant mismatch")
+    return header_tenant_id

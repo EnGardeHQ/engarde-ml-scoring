@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import logging
 
-from app.core.auth import verify_service_token, require_tenant
+from app.core.auth import verify_service_token, require_tenant, enforce_tenant_match
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,9 @@ router = APIRouter(prefix="/api/v1/segmentation", tags=["Segmentation"])
 
 
 class SegmentRequest(BaseModel):
-    tenant_id: str
+    # [Story 16.4] Retained for caller compatibility but no longer trusted:
+    # the X-EnGarde-Tenant-Id header is authoritative (403 on mismatch).
+    tenant_id: Optional[str] = None
     data: List[Dict[str, Any]]
     algorithm: str = "kmeans"  # kmeans, dbscan, agglomerative, spectral, gaussian_mixture
     n_clusters: Optional[int] = 5
@@ -34,8 +36,11 @@ class SegmentResponse(BaseModel):
 async def run_segmentation(
     request: SegmentRequest,
     _token: str = Depends(verify_service_token),
+    tenant_id: str = Depends(require_tenant),
 ):
     """Run clustering segmentation on provided data."""
+    # [Story 16.4] Header-derived tenant wins over body-supplied tenant_id.
+    tenant_id = enforce_tenant_match(tenant_id, request.tenant_id)
     try:
         from app.services.advanced_segmentation import AdvancedSegmentationEngine
 
